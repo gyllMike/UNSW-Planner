@@ -1,0 +1,97 @@
+import { getData, setData } from './dataStore.js';
+import type { Session, DataStore } from './dataStore.js';
+import {
+  studentIdGen,
+  controlUserSessionIdGen,
+  nameValidity,
+  eamilValidity,
+  passwordValidity,
+  programNameValidity,
+  ageValidity
+} from './helper.js';
+import createHttpError from 'http-errors';
+import bcrypt from 'bcrypt';
+import e from 'express';
+
+
+/**
+  * Registers a new mission control user and creates an authenticated user session.
+  *
+  * @param email - The email address that the controlUser uses to register
+  * @param password - The password that the controlUser sets to register and later logins
+  * @param nameFirst - The first name of the controlUser
+  * @param nameLast - The last name of the controlUser
+  *
+  * @returns An object containing the generated controlUserSessionId if the controlUser is successfully registered.
+  * @throws {HTTPError} 400 - Error case: if the email, name or password is invalid.
+*/
+export async function adminAuthRegister(email: string, password: string, nameFirst: string, nameLast: string, programName: string, age: number): Promise<{ controlUserSessionId: string }> {
+    
+    // email Validity
+    if (eamilValidity(email) !== null) {
+        throw createHttpError(400, 'Invalid email');
+    }
+
+    // name Validity
+    if (nameValidity(nameFirst, nameLast) !== true) {
+        throw createHttpError(400, 'Name Invalid');
+    }
+
+    // Password Validity
+    if (passwordValidity(password) !== true) {
+        throw createHttpError(400, 'PassWoed Invalid');
+    }
+
+    // programName Validity
+    if (programNameValidity(programName) !== true) {
+        throw createHttpError(400, 'PassWoed Invalid');
+    }
+
+    // age Validity
+    if (ageValidity(age) !== true) {
+        throw createHttpError(400, 'PassWoed Invalid');
+    }
+
+    // get some data
+    const data: DataStore = getData();
+    const studentId: number = studentIdGen();
+    const studentSessionId: string = controlUserSessionIdGen();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // push the information of the control user into controlUserArray of data
+    data.StudentAuthArray.push({
+        studentAuth: {
+            studentId: studentId,
+            nameFirst: nameFirst,
+            nameLast: nameLast,
+            email: email,
+            oldPasswordHashes: [],
+            passwordHash: hashedPassword,
+            numSuccessfulLogins: 1,
+            numFailedPasswordsSinceLastLogin: 0
+        }
+    });
+
+    data.controlUserSessionsArray.push({
+        controlUserSession: {
+            controlUserSessionId: studentSessionId,
+            studentId: studentId
+        }
+    });
+
+    data.studentArray.push({
+        student: {
+            studentId: studentId,
+            age: age,
+            programName: programName
+        }
+    });
+
+
+    setData(data);
+
+    return { controlUserSessionId: studentSessionId};
+}
+
+
+
