@@ -6,6 +6,9 @@ import {
   expect,
   test,
 } from 'vitest';
+import { requestAdminAuthRegister } from "../src/requestHelpers.js";
+import { response } from "express";
+import { controlUserSessionIdGen } from "../src/helper.js";
 
 
 beforeEach(() => {
@@ -113,4 +116,40 @@ describe('adminAuthRegister tests', () => {
     });
     });
 
+    test('returns 200 for valid registration', async () => {
+        const response = await requestAdminAuthRegister({
+            email: 'z5678705@unsw.edu.au',
+            password: 'abc123~!@',
+            nameFirst: 'Alan',
+            nameLast: 'Guo',
+            programName: 'Computer Science',
+            age: 20,
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        expect(response.body).toEqual({
+            controlUserSessionId: expect.any(String),
+        });
+
+    });
+    
+
+    test('returns 400 for invalid registration', async () => {
+        const response = await requestAdminAuthRegister({
+            email: 'invalid-email',
+            password: 'abc123~!@',
+            nameFirst: 'Alan',
+            nameLast: 'Guo',
+            programName: 'Computer Science',
+            age: 20,
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        expect(response.body).toEqual({
+            error: expect.any(String),
+        });
+    });
+     
 });
