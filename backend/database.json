@@ -1,5 +1,33 @@
 {
-  "studentArray": [],
-  "StudentAuthArray": [],
-  "controlUserSessionsArray": []
+  "studentArray": [
+    {
+      "student": {
+        "studentId": 178851347,
+        "age": 20,
+        "programName": "Computer Science"
+      }
+    }
+  ],
+  "StudentAuthArray": [
+    {
+      "studentAuth": {
+        "studentId": 178851347,
+        "nameFirst": "Alan",
+        "nameLast": "Guo",
+        "email": "z5678705@unsw.edu.au",
+        "oldPasswordHashes": [],
+        "passwordHash": "$2b$10$UuGgBAsQfsADDnFijnJ.e.Edr2fiBaT63u84NuZAwoBj2UZtstwyS",
+        "numSuccessfulLogins": 1,
+        "numFailedPasswordsSinceLastLogin": 1
+      }
+    }
+  ],
+  "controlUserSessionsArray": [
+    {
+      "controlUserSession": {
+        "controlUserSessionId": "2f18a000-387d-4c1a-8500-ec8240df7bad",
+        "studentId": 178851347
+      }
+    }
+  ]
 }

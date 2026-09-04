@@ -10,6 +10,8 @@ export interface RegisterRequest {
   age: number;
 }
 
+
+
 export async function requestAdminAuthRegister(
   input: RegisterRequest
 ) {
@@ -33,3 +35,4 @@ export async function requestAdminAuthRegister(
     body: await response.json(),
   };
 }
+

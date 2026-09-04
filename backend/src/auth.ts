@@ -93,5 +93,52 @@ export async function adminAuthRegister(email: string, password: string, nameFir
     return { controlUserSessionId: studentSessionId};
 }
 
+/**
+ * Logs in an existing mission control user and creates an authenticated user session.
+ *
+ * @param email - The email address that the controlUser uses to log in
+ * @param password - The password that the controlUser uses to log in
+ * 
+ * @returns An object containing the generated controlUserSessionId if the controlUser is successfully logged in.
+ * @throws {HTTPError} 400 - Error case: if no user is found, the email does not exist, or the password is incorrect.
+ */
+export async function adminAuthLogin(email: string, password: string): Promise<{ controlUserSessionId: string }> {
 
+    const data = getData();
+
+    if (!data.StudentAuthArray || data.StudentAuthArray.length === 0) {
+        throw createHttpError(400, 'No user found');
+    }
+
+    const userObject = data.StudentAuthArray.find(f => f.studentAuth.email === email);
+    if (!userObject) {
+        throw createHttpError(400, 'Incorrect email or password');
+    }
+    const user = userObject.studentAuth;
+
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordMatches) {
+        user.numFailedPasswordsSinceLastLogin++;
+        setData(data);
+        throw createHttpError(400, 'Incorrect email or password');
+    }
+
+    user.numSuccessfulLogins++;
+    user.numFailedPasswordsSinceLastLogin = 0;
+    const controlUserSessionId =
+    controlUserSessionIdGen();
+
+    const newSession: Session = {
+        controlUserSessionId,
+        studentId: user.studentId,
+    };
+
+    data.controlUserSessionsArray.push({
+        controlUserSession: newSession,
+    });
+
+    setData(data);
+
+    return { controlUserSessionId };
+}
 

@@ -1,4 +1,4 @@
-import { adminAuthRegister } from "../src/auth.js";
+import { adminAuthLogin, adminAuthRegister } from "../src/auth.js";
 import { setData } from '../src/dataStore.js';
 import {
   beforeEach,
@@ -7,8 +7,6 @@ import {
   test,
 } from 'vitest';
 import { requestAdminAuthRegister } from "../src/requestHelpers.js";
-import { response } from "express";
-import { controlUserSessionIdGen } from "../src/helper.js";
 
 
 beforeEach(() => {
@@ -37,84 +35,123 @@ describe('adminAuthRegister tests', () => {
         });
     });
 
-    test('invalid email', async () => {
-    await expect(
-        adminAuthRegister(
-        'invalid-email',
-        'abc123~!@',
-        'Alan',
-        'Guo',
-        'Computer Science',
-        20
-        )
-    ).rejects.toMatchObject({
-        status: 400,
-    });
-    });
-
-
-    test('invalid name first', async () => {
-    await expect(
-        adminAuthRegister(
-        'z5678705@unsw.edu.au',
-        'abc123~!@',
-        'a'.repeat(1000),
-        'Guo',
-        'Computer Science',
-        20
-        )
-    ).rejects.toMatchObject({
-        status: 400,
-    });
+    test('register unsuccessfully: invalid email', async () => {
+        await expect(
+            adminAuthRegister(
+            'invalid-email',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
     });
 
+    test('register unsuccessfully: duplicate email', async () => {
+        await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
 
-    test('invalid name last', async () => {
-    await expect(
-        adminAuthRegister(
-        'z5678705@unsw.edu.au',
-        'abc123~!@',
-        'Alan',
-        'a'.repeat(1000),
-        'Computer Science',
-        20
-        )
-    ).rejects.toMatchObject({
-        status: 400,
-    });
-    });
-
-
-    test('invalid program name', async () => {
-    await expect(
-        adminAuthRegister(
-        'z5678705@unsw.edu.au',
-        'abc123~!@',
-        'Alan',
-        'Guo',
-        'a'.repeat(1000),
-        20
-        )
-    ).rejects.toMatchObject({
-        status: 400,
-    });
+        await expect(
+            adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'def456~!@',
+            'Peter',
+            'Smith',
+            'Engineering',
+            21
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
     });
 
+    test('register unsuccessfully: invalid password', async () => {
+        await expect(
+            adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            '123',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
+    });
 
-    test('invalid program age', async () => {
-    await expect(
-        adminAuthRegister(
-        'z5678705@unsw.edu.au',
-        'abc123~!@',
-        'Alan',
-        'Guo',
-        'a'.repeat(1000),
-        -1
-        )
-    ).rejects.toMatchObject({
-        status: 400,
+    test('register unsuccessfully: invalid name first', async () => {
+        await expect(
+            adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'a'.repeat(1000),
+            'Guo',
+            'Computer Science',
+            20
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
     });
+
+    test('register unsuccessfully: invalid name last', async () => {
+        await expect(
+            adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'a'.repeat(1000),
+            'Computer Science',
+            20
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
     });
+
+    test('register unsuccessfully: invalid program name', async () => {
+        await expect(
+            adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'a'.repeat(1000),
+            20
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
+    });
+
+    test('register unsuccessfully: invalid program age', async () => {
+        await expect(
+            adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            -1
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
+    });
+
+});
+
+describe('POST /v1/admin/auth/register - HTTP layer via requestHelper', () => {
 
     test('returns 200 for valid registration', async () => {
         const response = await requestAdminAuthRegister({
@@ -151,5 +188,58 @@ describe('adminAuthRegister tests', () => {
             error: expect.any(String),
         });
     });
-     
+
+})
+
+
+// Test function adminAuthLogin
+describe('adminAuthLogin tests', () => {
+
+    beforeEach(async () => {
+        await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+    });
+
+    test('Login successfully', async () => {
+
+        const LoginReturn = await adminAuthLogin(
+            'z5678705@unsw.edu.au',
+            'abc123~!@'
+        );
+
+        expect(LoginReturn).toEqual({
+            controlUserSessionId: expect.any(String)
+        });
+
+    });
+
+    test('Login unsuccessfully: email case', async () => {
+        await expect(
+            adminAuthLogin(
+                'z5555555@unsw.edu.au',
+                'abc123~!@'
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
+    });
+
+
+    test('Login unseccessfully: password case', async () => {
+        await expect(
+            adminAuthLogin(
+                'z5678705@unsw.edu.au',
+                '123'
+            )
+        ).rejects.toMatchObject({
+            status: 400,
+        });
+    });
+
 });
