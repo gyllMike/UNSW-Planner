@@ -1,5 +1,5 @@
 import express from "express";
-import { adminAuthRegister } from "./auth.js";
+import { adminAuthLogin, adminAuthRegister } from "./auth.js";
 
 const app = express();
 const PORT = 3000;
@@ -74,6 +74,16 @@ app.post('/v1/admin/auth/register', async (req, res) => {
   res.status(200).json(result);
 });
 
+app.post('/v1/admin/auth/login', async (req, res) => {
+    const {
+        email,
+        password,
+    } = req.body;
+
+    const result = await adminAuthLogin(email, password);
+
+    res.status(200).json(result);
+});
 
 // dealing none route
 app.use((req, res) => {

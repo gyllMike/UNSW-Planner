@@ -6,8 +6,7 @@ import {
   expect,
   test,
 } from 'vitest';
-import { requestAdminAuthRegister } from "../src/requestHelpers.js";
-
+import { requestAdminAuthLogin, requestAdminAuthRegister } from "../src/requestHelpers.js";
 
 beforeEach(() => {
   setData({
@@ -154,40 +153,131 @@ describe('adminAuthRegister tests', () => {
 describe('POST /v1/admin/auth/register - HTTP layer via requestHelper', () => {
 
     test('returns 200 for valid registration', async () => {
-        const response = await requestAdminAuthRegister({
-            email: 'z5678705@unsw.edu.au',
-            password: 'abc123~!@',
-            nameFirst: 'Alan',
-            nameLast: 'Guo',
-            programName: 'Computer Science',
-            age: 20,
-        });
-
+          const response = await requestAdminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
         expect(response.statusCode).toBe(200);
-
-        expect(response.body).toEqual({
-            controlUserSessionId: expect.any(String),
-        });
-
+        expect(response.body).toHaveProperty('controlUserSessionId');
+        expect(typeof response.body.controlUserSessionId).toBe('string');
     });
     
 
-    test('returns 400 for invalid registration', async () => {
-        const response = await requestAdminAuthRegister({
-            email: 'invalid-email',
-            password: 'abc123~!@',
-            nameFirst: 'Alan',
-            nameLast: 'Guo',
-            programName: 'Computer Science',
-            age: 20,
-        });
+    test('returns 400 for invalid registration: email case', async () => {
+        const response = await requestAdminAuthRegister(
+            'invalid-email',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
 
         expect(response.statusCode).toBe(400);
-
-        expect(response.body).toEqual({
-            error: expect.any(String),
-        });
+        expect(response.body).toHaveProperty('error', expect.any(String));
     });
+
+    test('returns 400 for invalid registration: duplicate email case', async () => {
+        await requestAdminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+
+        const response = await requestAdminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'def456~!@',
+            'Peter',
+            'Smith',
+            'Engineering',
+            21
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for invalid registration: password case', async () => {
+        const response = await requestAdminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'a'.repeat(100),
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for invalid registration: nameFirst case', async () => {
+        const response = await requestAdminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'a'.repeat(100),
+            'Guo',
+            'Computer Science',
+            20
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+
+    test('returns 400 for invalid registration: nameLast case', async () => {
+        const response = await requestAdminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'G'.repeat(100),
+            'Computer Science',
+            20
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+
+    test('returns 400 for invalid registration: programName case', async () => {
+        const response = await requestAdminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'C'.repeat(100),
+            20
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+
+    test('returns 400 for invalid registration: age case', async () => {
+        const response = await requestAdminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            -1
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+
 
 })
 
@@ -240,6 +330,53 @@ describe('adminAuthLogin tests', () => {
         ).rejects.toMatchObject({
             status: 400,
         });
+    });
+
+});
+
+describe('POST /v1/admin/auth/login - HTTP layer via requestHelper', () => {
+
+    beforeEach(async () => {
+        await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+    });
+
+    test('returns 200 for valid login', async () => {
+        const response = await requestAdminAuthLogin(
+            'z5678705@unsw.edu.au',
+            'abc123~!@'
+        );
+        
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toHaveProperty('controlUserSessionId');
+        expect(typeof response.body.controlUserSessionId).toBe('string');
+    });
+
+    test('returns 400 for invalid login: email case', async () => {
+        const response = await requestAdminAuthLogin(
+            'invalid-email',
+            'abc123~!@'
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+
+    test('returns 400 for invalid login: password case', async () => {
+        const response = await requestAdminAuthLogin(
+            'z5678705@unsw.edu.au',
+            'wrongPassword123'
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
     });
 
 });
