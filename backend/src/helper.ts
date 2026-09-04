@@ -2,7 +2,6 @@ import { getData} from './dataStore.js';
 import { v4 as uuidv4 } from 'uuid';
 import validator from 'validator';
 
-
 /**
  * Creating a new control user ID
  * 
@@ -28,7 +27,6 @@ export function controlUserSessionIdGen(): string {
   const controlUserSessionId = uuidv4();
   return controlUserSessionId;
 }
-
 
 // set the help function of name validity
 /**
@@ -80,7 +78,6 @@ export function eamilValidity(email: string, currentUserId: number | null = null
     return null;
 }
 
-
 /**
  * Checks whether the given password is valid.
  *
@@ -102,7 +99,6 @@ export function passwordValidity(password: string): boolean {
     }
 }
 
-
 /**
  * Checks whether the given password is valid.
  *
@@ -121,7 +117,6 @@ export function programNameValidity(programName: string): boolean {
 
     return true;
 }
-
 
 
 /**

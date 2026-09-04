@@ -13,7 +13,14 @@ const TIMEOUT_MS = 5 * 1000;
  *   
  * @returns The HTTP status code and leith response body
  */
-export async function requestAdminAuthRegister(email: string, password: string, nameFirst: string, nameLast: string, programName: string, age: number) {
+export async function requestAdminAuthRegister(
+        email: string, 
+        password: string, 
+        nameFirst: string, 
+        nameLast: string, 
+        programName: string, 
+        age: number
+    ) {
     const res = await fetch(SERVER_URL + '/v1/admin/auth/register', {
         method: 'POST',
         headers: {
@@ -35,7 +42,6 @@ export async function requestAdminAuthRegister(email: string, password: string, 
         body: await res.json(),
     };
 }
-
 
 /**
  * Send POST '/v1/admin/auth/login' request

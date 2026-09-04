@@ -37,7 +37,6 @@ app.get("/courses", (req, res) => {
     res.json(courses);
 });
 
-
 /**
  * POST /v1/admin/auth/register
  *
@@ -49,8 +48,8 @@ app.get("/courses", (req, res) => {
  * @param {string} nameLast     200.user.nameLast - user put the nameLast
  * @param {string} programName  200.user.programName - user put the programName
  * @param {number} age          200.user.age - user put the age
+ * 
  * @returns {Object} 200 - The generated controlUserSessionId
- *
  */
 app.post('/v1/admin/auth/register', async (req, res) => {
   const {
@@ -74,6 +73,17 @@ app.post('/v1/admin/auth/register', async (req, res) => {
   res.status(200).json(result);
 });
 
+
+/**
+ * POST /v1/admin/auth/login
+ *
+ * user input the information and login
+ * 
+ * @param {string} email        200.user.email - user put the email
+ * @param {string} password     200.user.password - user put the password
+ *
+ * @returns {Object} 200 - The generated controlUserSessionId
+ */
 app.post('/v1/admin/auth/login', async (req, res) => {
     const {
         email,

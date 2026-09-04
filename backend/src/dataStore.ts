@@ -34,9 +34,6 @@ export interface DataStore {
     controlUserSessionsArray: {controlUserSession: Session }[];
 }
 
-
-
-
 // data build
 
 let data: DataStore = {

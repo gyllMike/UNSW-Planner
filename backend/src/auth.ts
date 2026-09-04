@@ -1,18 +1,16 @@
 import { getData, setData } from './dataStore.js';
 import type { Session, DataStore } from './dataStore.js';
 import {
-  studentIdGen,
-  controlUserSessionIdGen,
-  nameValidity,
-  eamilValidity,
-  passwordValidity,
-  programNameValidity,
-  ageValidity
+        studentIdGen,
+        controlUserSessionIdGen,
+        nameValidity,
+        eamilValidity,
+        passwordValidity,
+        programNameValidity,
+        ageValidity
 } from './helper.js';
 import createHttpError from 'http-errors';
 import bcrypt from 'bcrypt';
-import e from 'express';
-
 
 /**
   * Registers a new mission control user and creates an authenticated user session.
@@ -25,7 +23,13 @@ import e from 'express';
   * @returns An object containing the generated controlUserSessionId if the controlUser is successfully registered.
   * @throws {HTTPError} 400 - Error case: if the email, name or password is invalid.
 */
-export async function adminAuthRegister(email: string, password: string, nameFirst: string, nameLast: string, programName: string, age: number): Promise<{ controlUserSessionId: string }> {
+export async function adminAuthRegister(
+        email: string, 
+        password: string, 
+        nameFirst: string, 
+        nameLast: string, 
+        programName: string, 
+        age: number): Promise<{ controlUserSessionId: string }> {
     
     // email Validity
     if (eamilValidity(email) !== null) {
