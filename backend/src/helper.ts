@@ -1,6 +1,7 @@
-import { getData} from './dataStore.js';
+import { getData, type DataStore} from './dataStore.js';
 import { v4 as uuidv4 } from 'uuid';
 import validator from 'validator';
+import createHttpError from 'http-errors';
 
 /**
  * Creating a new control user ID
@@ -118,7 +119,6 @@ export function programNameValidity(programName: string): boolean {
     return true;
 }
 
-
 /**
  * Checks whether the given password is valid.
  *
@@ -134,4 +134,22 @@ export function ageValidity(age: number): boolean {
     } 
     
     return true;
+}
+
+/**
+ * Find the userid from sessionid
+ *
+ * @param {string} controlUserSessionId - via unique controuserSessionId to find its studentId
+ *
+ * @returns {number} studentId  - Successful find studentId which match its unique controlUserSessionId
+ */
+export function findStudentIdFromSession(controlUserSessionId: string): number {
+    const data: DataStore = getData();
+
+    const findStudentId = data.controlUserSessionsArray.find(f => f.controlUserSession.controlUserSessionId === controlUserSessionId);
+    if (!findStudentId) {
+        throw createHttpError(401, 'Invalid studentId');
+    }
+
+    return findStudentId.controlUserSession.studentId;
 }

@@ -146,3 +146,50 @@ export async function adminAuthLogin(email: string, password: string): Promise<{
     return { controlUserSessionId };
 }
 
+/**
+ * returns the full details of a student (control user)
+ * 
+ * @param studentId - the unique identifier of the student (control user)
+ * 
+ * @returns An object containing the student's id, name, email, program name, successful login count and failed password count.
+ * @throws {HTTPError} 401 - Error case: if the studentId is invalid.
+ */
+export function adminStudentUserDetails(studentId: number): {user: 
+    {
+        studentId: number;
+        name: string;
+        age: number;
+        email: string;
+        programName: string;
+        numSuccessfulLogins: number;
+        numFailedPasswordsSinceLastLogin: number;
+    }
+} {
+
+    const data = getData();
+    const userObject = data.StudentAuthArray.find(f => f.studentAuth.studentId === studentId);
+    if (!userObject) {
+        throw createHttpError(401, 'Invalid studentId');
+    }
+    const userAuth = userObject.studentAuth;
+
+    const studentSpecificDetail = data.studentArray.find(f => f.student.studentId === studentId);
+    if (!studentSpecificDetail) {
+        throw createHttpError(401, 'Invalid studentId');
+    }
+    const program = studentSpecificDetail.student.programName;
+    const age = studentSpecificDetail.student.age;
+
+    return {
+        user:
+        {
+            studentId: userAuth.studentId,
+            name:`${userAuth.nameFirst} ${userAuth.nameLast}`,
+            age: age,
+            email: userAuth.email,
+            programName: program,
+            numSuccessfulLogins: userAuth.numSuccessfulLogins,
+            numFailedPasswordsSinceLastLogin: userAuth.numFailedPasswordsSinceLastLogin,
+        },
+    };
+}

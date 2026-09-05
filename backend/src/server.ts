@@ -1,5 +1,7 @@
 import express from "express";
-import { adminAuthLogin, adminAuthRegister } from "./auth.js";
+import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails } from "./auth.js";
+import createHttpError from "http-errors";
+import { findStudentIdFromSession } from "./helper.js";
 
 const app = express();
 const PORT = 3000;
@@ -24,7 +26,6 @@ const courses = [
     }
 ];
 
-
 // routes
 
 app.get("/", (req, res) => {
@@ -37,6 +38,7 @@ app.get("/courses", (req, res) => {
     res.json(courses);
 });
 
+///////////////////////////////////////////////////////////////////////////////
 /**
  * POST /v1/admin/auth/register
  *
@@ -95,6 +97,42 @@ app.post('/v1/admin/auth/login', async (req, res) => {
     res.status(200).json(result);
 });
 
+/**
+ * GET /v1/admin/studentuser/details
+ * 
+ * Retrieve detailed information about a specific student user
+ * based on a valid controlUserSessionId.
+ * 
+ * @param {string} controlUserSessionId - A unique session ID (generated via UUID) that maps to a valid studentId.
+ * 
+ * @returns {object} 200 - Successful response containing user details
+ * @returns {object} 200.user
+ * @returns {number} 200.user.studentId - The user's unique ID
+ * @returns {string} 200.user.name - Full name (first and last name concatenated with a space)
+ * @returns {number} 200.user.age - The age of the user.
+ * @returns {string} 200.user.email - The user's registered email address
+ * @returns {string} 200.user.programName - The program name that the student user studyed in
+ * @returns {number} 200.user.numSuccessfulLogins - Total successful logins since registration
+ * @returns {number} 200.user.numFailedPasswordsSinceLastLogin - Number of failed login attempts
+ *                                                              since the last successful login
+ */
+app.get('/v1/admin/studentuser/details', (req, res) => {
+
+  const controlUserSessionId = req.header('controlUserSessionId');
+
+  if (!controlUserSessionId) {
+    throw createHttpError(401, 'Missing controlUserSessionid');
+  }
+
+  const studentId = findStudentIdFromSession(controlUserSessionId);
+
+  const result = adminStudentUserDetails(studentId);
+
+  res.status(200).json(result);
+
+});
+
+///////////////////////////////////////////////////////////////////////////////
 // dealing none route
 app.use((req, res) => {
   res.status(404).json({

@@ -69,3 +69,22 @@ export async function requestAdminAuthLogin(email: string, password: string) {
     };
 }
 
+/**
+ * Send GET '/v1/admin/studentuser/details'
+ * 
+ * @param controlUserSessionId
+ * 
+ * @returns The HTTP status code and leith response body
+ */
+export async function requestAdminStudentUserDetails(controlUserSessionId: string) {
+    const res = await fetch(SERVER_URL + '/v1/admin/studentuser/details', {
+        method: 'GET',
+        headers: { controlUserSessionId },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    return {
+        statusCode: res.status,
+        body: await res.json(),
+    };
+}

@@ -1,4 +1,4 @@
-import { adminAuthLogin, adminAuthRegister } from "../src/auth.js";
+import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails } from "../src/auth.js";
 import { setData } from '../src/dataStore.js';
 import {
   beforeEach,
@@ -6,7 +6,8 @@ import {
   expect,
   test,
 } from 'vitest';
-import { requestAdminAuthLogin, requestAdminAuthRegister } from "../src/requestHelpers.js";
+import { requestAdminAuthLogin, requestAdminAuthRegister, requestAdminStudentUserDetails } from "../src/requestHelpers.js";
+import { findStudentIdFromSession } from "../src/helper.js";
 
 beforeEach(() => {
   setData({
@@ -232,7 +233,6 @@ describe('POST /v1/admin/auth/register - HTTP layer via requestHelper', () => {
         expect(response.body).toHaveProperty('error', expect.any(String));
     });
 
-
     test('returns 400 for invalid registration: nameLast case', async () => {
         const response = await requestAdminAuthRegister(
             'z5678705@unsw.edu.au',
@@ -280,7 +280,6 @@ describe('POST /v1/admin/auth/register - HTTP layer via requestHelper', () => {
 
 
 })
-
 
 // Test function adminAuthLogin
 describe('adminAuthLogin tests', () => {
@@ -376,6 +375,89 @@ describe('POST /v1/admin/auth/login - HTTP layer via requestHelper', () => {
         );
 
         expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+});
+
+// Test function adminStudentUserDetails
+describe('adminStudentUserDetails tests', () => {
+
+    let studentId: number;
+
+    beforeEach(async () => {
+        const register = await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+
+        studentId = findStudentIdFromSession(register.controlUserSessionId);
+    });
+
+    test('Correct Student Details', () => {
+
+        const student = adminStudentUserDetails(studentId);
+
+        expect(student).toEqual({
+        user: {
+            studentId,
+            name: 'Alan Guo',
+            age: 20,
+            email: 'z5678705@unsw.edu.au',
+            programName: 'Computer Science',
+            numSuccessfulLogins: 1,
+            numFailedPasswordsSinceLastLogin: 0,
+        },
+        });
+    });
+
+    test('throws for invalid studentId', () => {
+        expect(() => adminStudentUserDetails(-1)).toThrow('Invalid studentId');
+    });
+
+});
+
+describe('GET /v1/admin/studentuser/details - HTTP layer via requestHelper', () => {
+
+    let controlUserSessionId: string;
+
+    beforeEach(async () => {
+        const register = await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+
+        controlUserSessionId = register.controlUserSessionId;
+    });
+
+    test('returns 200 for valid details', async () => {
+        const response = await requestAdminStudentUserDetails(controlUserSessionId);
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toEqual({
+        user: {
+            studentId: expect.any(Number),
+            name: 'Alan Guo',
+            age: 20,
+            email: 'z5678705@unsw.edu.au',
+            programName: 'Computer Science',
+            numSuccessfulLogins: 1,
+            numFailedPasswordsSinceLastLogin: 0,
+        },
+        });
+    });
+
+    test('returns 401 for invalid controlUserSessionId', async () => {
+        const response = await requestAdminStudentUserDetails('-1');
+        expect(response.statusCode).toBe(401);
         expect(response.body).toHaveProperty('error', expect.any(String));
     });
 
