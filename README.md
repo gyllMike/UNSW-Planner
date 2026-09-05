@@ -13,9 +13,10 @@ Completed:
 - Student registration with input validation
 - Secure password hashing with bcrypt
 - Student login and password verification
+- Retrieval of authenticated student details
 - UUID-based authenticated sessions
 - JSON file persistence for local development
-- REST endpoints for registration and login
+- REST endpoints for registration, login and student details
 - Unit and HTTP integration tests for authentication
 
 In progress:
@@ -175,6 +176,29 @@ Successful response:
 ```json
 {
   "controlUserSessionId": "generated-session-uuid"
+}
+```
+
+### Get student details
+
+```http
+GET /v1/admin/studentuser/details
+controlUserSessionId: generated-session-uuid
+```
+
+Successful response:
+
+```json
+{
+  "user": {
+    "studentId": 1,
+    "name": "Alan Guo",
+    "age": 20,
+    "email": "z5678705@unsw.edu.au",
+    "programName": "Computer Science",
+    "numSuccessfulLogins": 1,
+    "numFailedPasswordsSinceLastLogin": 0
+  }
 }
 ```
 
