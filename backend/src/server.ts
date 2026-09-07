@@ -1,5 +1,5 @@
 import express from "express";
-import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails } from "./auth.js";
+import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails, adminStudentUserDetailsUpdate } from "./auth.js";
 import createHttpError from "http-errors";
 import { findStudentIdFromSession } from "./helper.js";
 
@@ -127,6 +127,46 @@ app.get('/v1/admin/studentuser/details', (req, res) => {
   const studentId = findStudentIdFromSession(controlUserSessionId);
 
   const result = adminStudentUserDetails(studentId);
+
+  res.status(200).json(result);
+
+});
+
+/**
+ * PUT /v1/admin/studentuser/details
+ * 
+ * Retrieve detailed information about a specific student user
+ * based on a valid controlUserSessionId 
+ * 
+ * @param {string} controlUserSessionId - A unique session ID (generated via UUID) that maps to a valid studentId.
+ * @param {string} email        200.user.email - user put the email
+ * @param {string} password     200.user.password - user put the password
+ * @param {string} nameFirst    200.user.nameFirst - user put the nameFirst
+ * @param {string} nameLast     200.user.nameLast - user put the nameLast
+ * @param {number} age          200.user.age - user put the age
+ * @param {string} programName  200.user.programName - user put the programName
+ * 
+ * @returns {}
+ */
+app.put('/v1/admin/studentuser/details', (req, res) => {
+
+  const controlUserSessionId = req.header('controlUserSessionId');
+
+  if (!controlUserSessionId) {
+    throw createHttpError(401, 'Missing controlUserSessionid');
+  }
+
+  const {
+    email,
+    nameFirst,
+    nameLast,
+    age, 
+    programName,
+  } = req.body;
+
+  const studentId = findStudentIdFromSession(controlUserSessionId);
+
+  const result = adminStudentUserDetailsUpdate(studentId, email, nameFirst, nameLast, age, programName);
 
   res.status(200).json(result);
 

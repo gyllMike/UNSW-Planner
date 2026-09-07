@@ -193,3 +193,60 @@ export function adminStudentUserDetails(studentId: number): {user:
         },
     };
 }
+
+/**
+ * Updates the email and name details of an existing mission control user.
+ *
+ * @param studentId - The unique identifier of the student
+ * @param email - The new email address for the student
+ * @param nameFirst - The new first name of the student
+ * @param nameLast - The new last name of the student
+ * @param programName - The program that the student is taking
+ * @param age - The age of the user
+ *
+ * @returns An empty object if the controlUser details are successfully updated.
+ *
+ * @throws {HTTPError} 400 - If the email, name, age, or programName is invalid.
+ * @throws {HTTPError} 401 - If the studentId/controlUserId is invalid.
+ */
+export function adminStudentUserDetailsUpdate(studentId: number, email: string, nameFirst: string, nameLast: string, age: number, programName: string ): Record<string, never> {
+
+    const data = getData();
+
+    const student = data.studentArray.find(f => f.student.studentId === studentId);
+    const stuDetail = data.StudentAuthArray.find(f => f.studentAuth.studentId === studentId);
+
+    if (!student || !stuDetail) {
+        throw createHttpError(401, 'Invalid studentId');
+    }
+
+    const emailError = eamilValidity(email, studentId);
+
+    if (emailError === 'Wrong format') {
+        throw createHttpError(400, 'Invalid email');
+    } else if (emailError === 'Email in use') {
+        throw createHttpError(400, 'Email is currently used by another user');
+    }
+
+    if (!nameValidity(nameFirst, nameLast)) {
+        throw createHttpError(400, 'NameFirst or NameLast is invalid');
+    }
+
+    if (!programNameValidity(programName)) {
+        throw createHttpError(400, 'Invalid programName');
+    }
+
+    if (!ageValidity(age)) {
+        throw createHttpError(400, 'Invalid age');
+    }
+
+    student.student.programName = programName;
+    student.student.age = age;
+    stuDetail.studentAuth.email = email;
+    stuDetail.studentAuth.nameFirst = nameFirst;
+    stuDetail.studentAuth.nameLast = nameLast;
+    
+    setData(data);
+
+    return {};
+}

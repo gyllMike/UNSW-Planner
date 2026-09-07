@@ -1,4 +1,4 @@
-import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails } from "../src/auth.js";
+import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails, adminStudentUserDetailsUpdate } from "../src/auth.js";
 import { setData } from '../src/dataStore.js';
 import {
   beforeEach,
@@ -6,8 +6,9 @@ import {
   expect,
   test,
 } from 'vitest';
-import { requestAdminAuthLogin, requestAdminAuthRegister, requestAdminStudentUserDetails } from "../src/requestHelpers.js";
+import { requestAdminAuthLogin, requestAdminAuthRegister, requestAdminStudentUserDetails, requestAdminStudentDetailsUpdate } from "../src/requestHelpers.js";
 import { findStudentIdFromSession } from "../src/helper.js";
+
 
 beforeEach(() => {
   setData({
@@ -277,9 +278,7 @@ describe('POST /v1/admin/auth/register - HTTP layer via requestHelper', () => {
         expect(response.body).toHaveProperty('error', expect.any(String));
     });
 
-
-
-})
+});
 
 // Test function adminAuthLogin
 describe('adminAuthLogin tests', () => {
@@ -461,4 +460,242 @@ describe('GET /v1/admin/studentuser/details - HTTP layer via requestHelper', () 
         expect(response.body).toHaveProperty('error', expect.any(String));
     });
 
+});
+
+// Test function adminStudentUserDetailsUpdate
+describe('adminStudentUserDetailsUpdate tests', () => {
+
+    let studentId: number;
+
+    beforeEach(async () => {
+        const register = await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+
+        studentId = findStudentIdFromSession(register.controlUserSessionId);
+    });
+
+
+    test('Details Update Successful', () => {
+
+        const res1 = adminStudentUserDetailsUpdate(studentId, 'z5567980@unsw.edu.au', 'Chris', 'Li', 21, 'Electrical Eng');
+
+        const res2 = adminStudentUserDetails(studentId);
+
+        expect(res2).toMatchObject({
+            user: {
+                studentId,
+                name: 'Chris Li',
+                age: 21,
+                email: 'z5567980@unsw.edu.au',
+                programName: 'Electrical Eng',
+                numSuccessfulLogins: expect.any(Number),
+                numFailedPasswordsSinceLastLogin: expect.any(Number),
+            },
+        });
+    });
+
+    test('Details Update Unsuccessful: Invalid studentId', () => {
+        expect(() => adminStudentUserDetailsUpdate(-1, '123', 'Chris', 'Li', 21, 'Electrical Eng')).toThrow('Invalid studentId');
+    });
+
+    test('Details Update Unsuccessful: Invalid Email fromat', () => {
+        expect(() => adminStudentUserDetailsUpdate(studentId, '123', 'Chris', 'Li', 21, 'Electrical Eng')).toThrow('Invalid email');
+    });
+
+    test('Details Update Unsuccessful: Email in use', async () => {
+        let stu1Id: number;
+        const register = await adminAuthRegister(
+            'z5678706@unsw.edu.au',
+            'abc123~!@',
+            'Jack',
+            'Cheng',
+            'Computer Science',
+            20
+        );
+        stu1Id = findStudentIdFromSession(register.controlUserSessionId);
+        expect(() => adminStudentUserDetailsUpdate(stu1Id, 'z5678705@unsw.edu.au', 'Mike', 'Cheng', 21, 'Computer Science')).toThrow('Email is currently used by another user');
+    });
+
+    test('Details Update Unsuccessful: FirstName invalidity', () => {
+        expect(() => adminStudentUserDetailsUpdate(studentId, 'z5567980@unsw.edu.au', 'a'.repeat(100), 'Guo', 21, 'Electrical Eng')).toThrow('NameFirst or NameLast is invalid');
+    });
+
+    test('Details Update Unsuccessful: LastName invalidity', () => {
+        expect(() => adminStudentUserDetailsUpdate(studentId, 'z5567980@unsw.edu.au', 'Jack', 'G'.repeat(100), 21, 'Electrical Eng')).toThrow('NameFirst or NameLast is invalid');
+    });
+
+    test('Details Update Unsuccessful: ProgramName invalidity', () => {
+        expect(() => adminStudentUserDetailsUpdate(studentId, 'z5567980@unsw.edu.au', 'Jack', 'Guo', 21, 'E'.repeat(100))).toThrow('Invalid programName');
+    });
+
+    test('Details Update Unsuccessful: age invalidity', () => {
+        expect(() => adminStudentUserDetailsUpdate(studentId, 'z5567980@unsw.edu.au', 'Jack', 'Guo', -1, 'Electrical Eng')).toThrow('Invalid age');
+    });
+});
+
+describe('PUT /v1/admin/studentuser/details - HTTP layer via requestHelper', () => {
+
+    let controlUserSessionId: string;
+
+    beforeEach(async () => {
+        const register = await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+
+        controlUserSessionId = register.controlUserSessionId;
+    });
+
+    test('returns 200 for updating successful', async () => {
+        const response = await requestAdminStudentDetailsUpdate(
+            controlUserSessionId,
+            'z55555@unsw.edu.au',
+            'Eric',
+            'Wang',
+            21,
+            'Electrical Eng'
+        );
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toEqual({});
+        const detailsResponse = await requestAdminStudentUserDetails(controlUserSessionId);
+        expect(detailsResponse.statusCode).toBe(200);
+        expect(detailsResponse.body).toMatchObject({
+            user: {
+                name: 'Eric Wang',
+                email: 'z55555@unsw.edu.au',
+                age: 21,
+                programName: 'Electrical Eng',
+            },
+        });
+    });
+
+    test('returns 401 for invalid controlUserSessionId', async () => {
+        const response = await requestAdminStudentDetailsUpdate(
+            '-1',
+            'z55555@unsw.edu.au',
+            'Eric',
+            'Wang',
+            21,
+            'Electrical Eng'
+        );
+        expect(response.statusCode).toBe(401);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 401 for missing controlUserSessionId', async () => {
+        const response = await requestAdminStudentDetailsUpdate(
+            '',
+            'z55555@unsw.edu.au',
+            'Eric',
+            'Wang',
+            21,
+            'Electrical Eng'
+        );
+        expect(response.statusCode).toBe(401);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for invalid email', async () => {
+        const response = await requestAdminStudentDetailsUpdate(
+            controlUserSessionId,
+            'z55555',
+            'Eric',
+            'Wang',
+            21,
+            'Electrical Eng'
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+
+    test('returns 400 for Email in use', async () => {
+
+        let sessionId: string;
+
+        const register = await adminAuthRegister(
+            'z5678706@unsw.edu.au',
+            'abc123~!@',
+            'Eric',
+            'Yi',
+            'Computer Science',
+            20
+        );
+        sessionId = register.controlUserSessionId
+
+        const response = await requestAdminStudentDetailsUpdate(
+            sessionId,
+            'z5678705@unsw.edu.au',
+            'Eric',
+            'Wang',
+            21,
+            'Electrical Eng'
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    
+    test('returns 400 for invalid nameFirst', async () => {
+        const response = await requestAdminStudentDetailsUpdate(
+            controlUserSessionId,
+            'z55555@unsw.edu.au',
+            'E'.repeat(100),
+            'Wang',
+            21,
+            'Electrical Eng'
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+
+    test('returns 400 for invalid nameLast', async () => {
+        const response = await requestAdminStudentDetailsUpdate(
+            controlUserSessionId,
+            'z55555@unsw.edu.au',
+            'Wang',
+            'E'.repeat(100),
+            21,
+            'Electrical Eng'
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for invalid age', async () => {
+        const response = await requestAdminStudentDetailsUpdate(
+            controlUserSessionId,
+            'z55555@unsw.edu.au',
+            'Wang',
+            'Eric',
+            -1,
+            'Electrical Eng'
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for invalid programName', async () => {
+        const response = await requestAdminStudentDetailsUpdate(
+            controlUserSessionId,
+            'z55555@unsw.edu.au',
+            'Wang',
+            'Eric',
+            20,
+            'E'.repeat(100)
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
 });

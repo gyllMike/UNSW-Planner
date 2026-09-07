@@ -88,3 +88,34 @@ export async function requestAdminStudentUserDetails(controlUserSessionId: strin
         body: await res.json(),
     };
 }
+
+/**
+ * Send GET '/v1/admin/studentuser/details'
+ * 
+ * @param controlUserSessionId
+ * 
+ * @returns The HTTP status code and leith response body
+ */
+export async function requestAdminStudentDetailsUpdate(controlUserSessionId: string, email: string, nameFirst: string, nameLast: string, age: number, programName: string) {
+
+    const res = await fetch(SERVER_URL + '/v1/admin/studentuser/details', {
+        method: 'PUT',
+        headers: { 
+            'Content-Type': 'application/json',
+            controlUserSessionId 
+        },
+        body: JSON.stringify({
+            email, 
+            nameFirst,
+            nameLast, 
+            age, 
+            programName,
+        }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    return {
+        statusCode: res.status,
+        body: await res.json(),
+    };
+}
