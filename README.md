@@ -15,9 +15,10 @@ Completed:
 - Student login and password verification
 - Retrieval of authenticated student details
 - Updating authenticated student details with input validation
+- Secure student password updates with password history checks
 - UUID-based authenticated sessions
 - JSON file persistence for local development
-- REST endpoints for registration, login, student details and student details updates
+- REST endpoints for registration, login, student details, details updates and password updates
 - Unit and HTTP integration tests for authentication
 
 In progress:
@@ -229,7 +230,30 @@ Successful response:
 {}
 ```
 
-Invalid registration, login or student details update requests return an error response with an appropriate HTTP status code:
+### Update student password
+
+```http
+PUT /v1/admin/studentuser/password
+Content-Type: application/json
+controlUserSessionId: generated-session-uuid
+```
+
+Example request body:
+
+```json
+{
+  "oldPassword": "abc123~!@",
+  "newPassword": "newPassword123!"
+}
+```
+
+Successful response:
+
+```json
+{}
+```
+
+Invalid registration, login, student details update or password update requests return an error response with an appropriate HTTP status code:
 
 ```json
 {
