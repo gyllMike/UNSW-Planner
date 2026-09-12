@@ -250,3 +250,62 @@ export function adminStudentUserDetailsUpdate(studentId: number, email: string, 
 
     return {};
 }
+
+/**
+ * Updates the password of an existing student user.
+ *
+ * @param studentId - The unique identifier of the student
+ * @param oldPassword - The current password of the student user
+ * @param newPassword - The new password to be set for the student user
+ *
+ * @returns An empty object if the student user password is successfully updated.
+ *
+ * @throws {HTTPError} 400 - If the old password is incorrect, the new password is invalid,
+ * matches the old password, or has already been used.
+ *
+ * @throws {HTTPError} 401 - If the studentId is invalid.
+ */
+export async function adminStudentUserPasswordUpdate(studentId: number, oldPassword: string, newPassword: string): Promise<Record<string, never>> {
+
+    const data = getData();
+
+    const student = data.StudentAuthArray.find(f => f.studentAuth.studentId === studentId);
+    if (!student) {
+        throw createHttpError(401, 'Invalid studentId');
+    }
+
+    if (oldPassword === newPassword) {
+        throw createHttpError(400, 'Old Password and New Password match exactly.');
+    } 
+
+    if (passwordValidity(newPassword) === false) {
+        throw createHttpError(400, 'New Password is not valid.');
+    }
+
+    const oldPasswordArray = student.studentAuth.oldPasswordHashes;
+    const oldHashPassword = await bcrypt.compare(oldPassword, student.studentAuth.passwordHash);
+    if (!oldHashPassword) {
+        throw createHttpError(400, 'Old Password is not the correct old password.');
+    }
+
+    const passwordHashes = [
+        student.studentAuth.passwordHash,
+        ...oldPasswordArray,
+    ]; 
+    
+    const comparisons = await Promise.all(passwordHashes.map(hash => bcrypt.compare(newPassword, hash)));
+
+    if (comparisons.some(matches => matches)) {
+        throw createHttpError(400, 'New Password has already been used before.');
+    }
+
+    const newHashPassword = await bcrypt.hash(newPassword, 10);
+
+    oldPasswordArray.push(student.studentAuth.passwordHash);
+
+    student.studentAuth.passwordHash = newHashPassword;
+
+    setData(data);
+
+    return {};
+}

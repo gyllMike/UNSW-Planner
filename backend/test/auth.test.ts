@@ -1,4 +1,4 @@
-import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails, adminStudentUserDetailsUpdate } from "../src/auth.js";
+import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails, adminStudentUserDetailsUpdate, adminStudentUserPasswordUpdate } from "../src/auth.js";
 import { setData } from '../src/dataStore.js';
 import {
   beforeEach,
@@ -6,8 +6,8 @@ import {
   expect,
   test,
 } from 'vitest';
-import { requestAdminAuthLogin, requestAdminAuthRegister, requestAdminStudentUserDetails, requestAdminStudentDetailsUpdate } from "../src/requestHelpers.js";
-import { findStudentIdFromSession } from "../src/helper.js";
+import { requestAdminAuthLogin, requestAdminAuthRegister, requestAdminStudentUserDetails, requestAdminStudentDetailsUpdate, requestAdminStudentUserPasswordUpdate } from "../src/requestHelpers.js";
+import { controlUserSessionIdGen, findStudentIdFromSession } from "../src/helper.js";
 
 
 beforeEach(() => {
@@ -698,4 +698,177 @@ describe('PUT /v1/admin/studentuser/details - HTTP layer via requestHelper', () 
         expect(response.statusCode).toBe(400);
         expect(response.body).toHaveProperty('error', expect.any(String));
     });
+});
+
+// test function adminStudentUserPasswordUpdate
+describe('adminStudentUserPasswordUpdate', () => {
+
+    let studentId: number;
+    
+    beforeEach(async () => {
+        const register = await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+        studentId = findStudentIdFromSession(register.controlUserSessionId);
+    });
+
+    test('Password Update Successful', async () => {
+        const res1 = await adminStudentUserPasswordUpdate(studentId, 'abc123~!@', 'cba123~@');
+        const loginReturn = await adminAuthLogin('z5678705@unsw.edu.au', 'cba123~@');
+        expect(res1).toEqual({});
+        expect(loginReturn).toEqual({controlUserSessionId: expect.any(String)});
+    });
+
+    test('Password Update Unsuccessful: Invalid studentId', async () => {
+        await expect(
+            adminStudentUserPasswordUpdate(-1, 'abc123~!@', 'cba123~@')
+        ).rejects.toThrow('Invalid studentId');
+    })
+
+    test('Password Update Unsuccessful: invalid old password', async () => {
+        await expect(
+            adminStudentUserPasswordUpdate(
+                studentId, 'abc124~!@', 'cba123~@'
+            )
+        ).rejects.toThrow('Old Password is not the correct old password.');
+    });
+
+    test('Password Update Unsuccessful: Old Password and New Password match exactly', async () => {
+        await expect(
+            adminStudentUserPasswordUpdate(
+                studentId, 'abc123~!@', 'abc123~!@'
+            )
+        ).rejects.toThrow('Old Password and New Password match exactly.');
+    });
+
+    test('Password Update Unsuccessful: New Password is not valid', async () => {
+        await expect(
+            adminStudentUserPasswordUpdate(
+                studentId, 'abc123~!@', 'a'.repeat(100)
+            )
+        ).rejects.toThrow('New Password is not valid.');
+    });
+
+    test('Password Update Unsuccessful: New Password has already been used before', async () => {
+
+        await adminStudentUserPasswordUpdate(
+            studentId,
+            'abc123~!@',
+            'newPassword123!'
+        );
+
+        await adminStudentUserPasswordUpdate(
+            studentId,
+            'newPassword123!',
+            'anotherPassword456!'
+        );
+
+        await expect(
+            adminStudentUserPasswordUpdate(
+                studentId,
+                'anotherPassword456!',
+                'abc123~!@'
+            )
+        ).rejects.toThrow('New Password has already been used before.');
+    });
+});
+
+describe('PUT /v1/admin/studentuser/password - HTTP layer via requestHelper', () => {
+
+    let controlUserSessionId: string;
+
+    beforeEach(async () => {
+        const register = await adminAuthRegister(
+            'z5678705@unsw.edu.au',
+            'abc123~!@',
+            'Alan',
+            'Guo',
+            'Computer Science',
+            20
+        );
+
+        controlUserSessionId = register.controlUserSessionId;
+    });
+
+    test('returns 200 for updating successful', async () => {
+        const response = await requestAdminStudentUserPasswordUpdate(
+            controlUserSessionId,
+            'abc123~!@',
+            'cba123~!@'
+        );
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toEqual({});
+        const detailsResponse = await requestAdminStudentUserDetails(controlUserSessionId);
+        expect(detailsResponse.statusCode).toBe(200);
+    });
+
+    test('returns 401 for inValid controlUserSessionId', async () => {
+        const response = await requestAdminStudentUserPasswordUpdate(
+            '-1',
+            'abc123~!@',
+            'cba123~!@'
+        );
+        expect(response.statusCode).toBe(401);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for invalid old password', async () => {
+        const response = await requestAdminStudentUserPasswordUpdate(
+            controlUserSessionId, 
+            'abc124~!@', 
+            'cba123~!@'
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for Old Password and New Password match exactly', async () => {
+        const response = await requestAdminStudentUserPasswordUpdate(
+            controlUserSessionId, 
+            'abc123~!@', 
+            'abc123~!@'
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for New Password is not valid', async () => {
+        const response = await requestAdminStudentUserPasswordUpdate(
+            controlUserSessionId, 
+            'abc123~!@', 
+            'a'.repeat(100)
+        );
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
+    test('returns 400 for New Password has already been used before', async () => {
+        await requestAdminStudentUserPasswordUpdate(
+            controlUserSessionId, 
+            'abc123~!@', 
+            'newPassword123!'
+        );
+
+        await requestAdminStudentUserPasswordUpdate(
+            controlUserSessionId, 
+            'newPassword123!', 
+            'newPassword456!'
+        );
+
+        const response = await requestAdminStudentUserPasswordUpdate(
+            controlUserSessionId, 
+            'newPassword456!', 
+            'newPassword123!'
+        );
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty('error', expect.any(String));
+    });
+
 });

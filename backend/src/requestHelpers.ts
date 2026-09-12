@@ -1,3 +1,5 @@
+import { boundedChannel } from "diagnostics_channel";
+
 const SERVER_URL = 'http://localhost:3000';
 const TIMEOUT_MS = 5 * 1000;
 
@@ -90,7 +92,7 @@ export async function requestAdminStudentUserDetails(controlUserSessionId: strin
 }
 
 /**
- * Send GET '/v1/admin/studentuser/details'
+ * Send PUT '/v1/admin/studentuser/details'
  * 
  * @param controlUserSessionId
  * 
@@ -110,6 +112,33 @@ export async function requestAdminStudentDetailsUpdate(controlUserSessionId: str
             nameLast, 
             age, 
             programName,
+        }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    return {
+        statusCode: res.status,
+        body: await res.json(),
+    };
+}
+
+/**
+ * Send PUT '/v1/admin/studentuser/details'
+ * 
+ * @param controlUserSessionId
+ * 
+ * @returns The HTTP status code and leith response body
+ */
+export async function requestAdminStudentUserPasswordUpdate(controlUserSessionId: string, oldPassword: string, newPassword: string) {
+    const res = await fetch(SERVER_URL + '/v1/admin/studentuser/password', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            controlUserSessionId 
+        },
+        body: JSON.stringify({
+            oldPassword,
+            newPassword,
         }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
     });

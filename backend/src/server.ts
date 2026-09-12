@@ -1,5 +1,5 @@
 import express from "express";
-import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails, adminStudentUserDetailsUpdate } from "./auth.js";
+import { adminAuthLogin, adminAuthRegister, adminStudentUserDetails, adminStudentUserDetailsUpdate, adminStudentUserPasswordUpdate } from "./auth.js";
 import createHttpError from "http-errors";
 import { findStudentIdFromSession } from "./helper.js";
 
@@ -170,6 +170,35 @@ app.put('/v1/admin/studentuser/details', (req, res) => {
 
   res.status(200).json(result);
 
+});
+
+/**
+ * PUT /v1/admin/studentuser/details
+ * 
+ * Retrieve detailed information about a specific student user
+ * based on a valid controlUserSessionId 
+ * 
+ * @param {string} controlUserSessionId - A unique session ID (generated via UUID) that maps to a valid studentId.
+ * @param {string} oldPassword 200.user.password - current user password (before change)
+ * @param {string} newPassword 200.user.password - new user password (after change)
+ * 
+ * @returns {} 
+ */
+app.put('/v1/admin/studentuser/password', async (req, res) => {
+  const controlUserSessionId = req.header('controlUserSessionId');
+  if (!controlUserSessionId) {
+    throw createHttpError(401, 'Missing controlUserSessionid');
+  }
+
+  const {
+    oldPassword,
+    newPassword,
+  } = req.body;
+
+  const studentId = findStudentIdFromSession(controlUserSessionId);
+  const result = await adminStudentUserPasswordUpdate(studentId, oldPassword, newPassword);
+
+  res.status(200).json(result);
 });
 
 ///////////////////////////////////////////////////////////////////////////////
